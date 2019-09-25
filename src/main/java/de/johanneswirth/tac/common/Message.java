@@ -1,12 +1,22 @@
 package de.johanneswirth.tac.common;
 
+import org.hibernate.validator.constraints.NotEmpty;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 public class Message {
+    @NotEmpty
     private String service;
+    @NotEmpty
     private String resource;
+    @NotNull
+    @Min(0)
     private long version;
+    @NotEmpty
     private List<String> recipients;
+    @NotEmpty
     private String payload;
 
     public Message(String service, String resource, long version, List<String> recipients, String payload) {
@@ -25,6 +35,7 @@ public class Message {
         this.payload = "";
     }
 
+    public Message() {}
 
     public String getService() {
         return service;

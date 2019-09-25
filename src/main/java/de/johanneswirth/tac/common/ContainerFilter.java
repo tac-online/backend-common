@@ -6,18 +6,15 @@ import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class AuthenticationRequired implements DynamicFeature {
+public class ContainerFilter implements DynamicFeature {
 
-    private String publicKey;
-
-    public AuthenticationRequired(String publicKey) {
-        this.publicKey = publicKey;
-    }
+    public ContainerFilter() {}
 
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
         if (resourceInfo.getResourceMethod().getAnnotation(Secured.class) != null) {
-            context.register(new AuthenticationFilter(publicKey));
+            context.register(new AuthenticationFilter());
         }
+        context.register(new HeaderFilter());
     }
 }
