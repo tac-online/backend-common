@@ -1,5 +1,8 @@
 package de.johanneswirth.tac.common;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +18,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.ext.Provider;
+
+import static de.johanneswirth.tac.common.ErrorStatus.TOKEN_EXPIRED;
+import static de.johanneswirth.tac.common.ErrorStatus.UNAUTHORIZED;
 
 /**
  * @author Johannes Wirth
@@ -33,12 +39,10 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         String ticket = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
         if (ticket == null) {
             LOGGER.warn("Authorization header not set");
-            throw new NotAuthorizedException("Authorization header must be provided");
+            requestContext.abortWith(Response.ok(UNAUTHORIZED).build());
         }
-        Optional<String> subject = Utils.validateJWT(ticket);
-        if (subject.isPresent()) {
-
-
+        try {
+            DecodedJWT jwt = Utils.validateJWT(ticket);
             final boolean sec = requestContext.getSecurityContext().isSecure();
             final String auth = requestContext.getSecurityContext().getAuthenticationScheme();
             requestContext.setSecurityContext(new SecurityContext() {
@@ -55,7 +59,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
                 @Override
                 public Principal getUserPrincipal() {
-                    return subject::get;
+                    return jwt::getSubject;
                 }
 
                 @Override
@@ -64,8 +68,10 @@ public class AuthenticationFilter implements ContainerRequestFilter {
                 }
 
             });
-        } else {
-            requestContext.abortWith(Response.status(401).header("access-control-allow-origin", "*").header("access-control-allow-headers", "access-control-allow-origin,content-type,authorization").build());
+        } catch (TokenExpiredException ex) {
+            requestContext.abortWith(Response.ok(TOKEN_EXPIRED).build());
+        } catch (JWTVerificationException ex) {
+            requestContext.abortWith(Response.ok(UNAUTHORIZED).build());
         }
 
     }

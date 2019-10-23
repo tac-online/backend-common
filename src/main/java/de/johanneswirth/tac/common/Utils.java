@@ -43,7 +43,7 @@ public class Utils {
         return (RSAPublicKey) kf.generatePublic(spec);
     }
 
-    public static Optional<String> validateJWT(String ticket) {
+    public static DecodedJWT validateJWT(String ticket) throws JWTVerificationException {
         LOGGER.info("Trying to authorize with ticket " + ticket);
         RSAPublicKey publicKey = null;
         try {
@@ -51,16 +51,10 @@ public class Utils {
         } catch (NoSuchAlgorithmException | IOException | InvalidKeySpecException e) {
             LOGGER.error("Uncaught Exception", e);
         }
-        try {
-
-            Algorithm algorithm = Algorithm.RSA256(publicKey, null);
-            JWTVerifier verifier = JWT.require(algorithm)
-                    .withIssuer("tac-server")
-                    .build(); //Reusable verifier instance
-            DecodedJWT jwt = verifier.verify(ticket);
-            return Optional.of(jwt.getSubject());
-        } catch (JWTVerificationException exception){
-            return Optional.empty();
-        }
+        Algorithm algorithm = Algorithm.RSA256(publicKey, null);
+        JWTVerifier verifier = JWT.require(algorithm)
+                .withIssuer("tac-server")
+                .build(); //Reusable verifier instance
+        return verifier.verify(ticket);
     }
 }
